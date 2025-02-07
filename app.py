@@ -6,8 +6,10 @@ import os
 app = Flask(__name__)
 CORS(app)  # Enable CORS
 
-# Set your OpenAI API key
+# Set your OpenAI API key, raise an error if it's not set
 openai.api_key = os.getenv("OPENAI_API_KEY")
+if not openai.api_key:
+    raise ValueError("OpenAI API key is missing. Please set the OPENAI_API_KEY environment variable.")
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -35,3 +37,5 @@ def chat():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# No need for Flask's built-in server; Gunicorn will handle it when deployed
