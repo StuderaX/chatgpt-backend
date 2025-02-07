@@ -23,9 +23,9 @@ def chat():
         return jsonify({"error": "No message provided."}), 400
 
     try:
-        # Updated method for making chat completions using the new OpenAI API
-        response = openai.completions.create(
-            model="gpt-3.5-turbo",
+        # Correct method to call for chat completions
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Ensure this is the correct model you want to use
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": user_message}
@@ -34,9 +34,9 @@ def chat():
             temperature=0.7
         )
 
-        # Extracting the message content from the new response format
+        # Extracting the response content from the API result
         bot_message = response['choices'][0]['message']['content'].strip()
-        return jsonify({"reply": bot_message})  # Changed key to "reply" to match your frontend
+        return jsonify({"reply": bot_message})  # Sending the response back to the frontend
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
