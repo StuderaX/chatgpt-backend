@@ -1,15 +1,18 @@
 from flask import Flask, request, jsonify
-import openai
 from flask_cors import CORS
+import openai
 import os
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS
+CORS(app)  # Enable CORS for all routes
 
-# Set your OpenAI API key, raise an error if it's not set
+# Configure OpenAI (environment variable set in Render)
 openai.api_key = os.getenv("OPENAI_API_KEY")
-if not openai.api_key:
-    raise ValueError("OpenAI API key is missing. Please set the OPENAI_API_KEY environment variable.")
+
+# Add a root route to verify deployment
+@app.route("/")
+def home():
+    return "ChatGPT backend is running! Use /chat for requests."
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -21,21 +24,21 @@ def chat():
 
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # You can use a different model if desired
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": user_message},
+                {"role": "user", "content": user_message}
             ],
             max_tokens=150,
-            n=1,
-            stop=None,
-            temperature=0.7,
+            temperature=0.7
         )
 
         bot_message = response.choices[0].message['content'].strip()
-        return jsonify({"response": bot_message})
+        return jsonify({"reply": bot_message})  # Changed key to "reply" to match your frontend
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# No need for Flask's built-in server; Gunicorn will handle it when deployed
+# Required for Render deployment
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
