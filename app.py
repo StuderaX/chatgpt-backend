@@ -6,38 +6,45 @@ import os
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-# Configure OpenAI (environment variable set in Render)
+# Set your OpenAI API key from the environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
+if not openai.api_key:
+    raise ValueError("The OPENAI_API_KEY environment variable is not set.")
 
-# Add a root route to verify deployment
+# A simple root route to verify the app is running
 @app.route("/")
 def home():
     return "ChatGPT backend is running! Use /chat for requests."
 
+# Chat route that uses the new ChatCompletion API
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json()
     user_message = data.get("message")
-
+    
     if not user_message:
         return jsonify({"error": "No message provided."}), 400
 
     try:
-        # Correct method to call for chat completions (for openai>=1.0.0)
-        response = openai.Completion.create(
-            model="gpt-3.5-turbo",  # Ensure this is the correct model you want to use
-            prompt=user_message,  # Directly use the user message as the prompt
+        # Call the new ChatCompletion endpoint
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # The chat model to use
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": user_message}
+            ],
             max_tokens=150,
             temperature=0.7
         )
 
-        # Extracting the response content from the API result
-        bot_message = response['choices'][0]['text'].strip()
-        return jsonify({"reply": bot_message})  # Sending the response back to the frontend
+        # Extract the bot's reply from the response
+        bot_message = response["choices"][0]["message"]["content"].strip()
+        return jsonify({"reply": bot_message})
 
     except Exception as e:
+        # Return any error encountered as JSON
         return jsonify({"error": str(e)}), 500
 
-# Required for Render deployment
+# For deployment (Render will use this entry point)
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
